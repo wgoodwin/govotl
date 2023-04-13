@@ -1,48 +1,55 @@
 package govotl
 
 import (
-    "bufio"
-    "fmt"
-    "os"
-    "strings"
+	"fmt"
+	"io/ioutil"
+	"strings"
 )
 
-
 // VOTLDoc is a shortcut to keeping the root of all the
-// headers in a VOTL document. 
+// headers in a VOTL document.
 type VOTLDoc []VOTLElement
 
-
-// NewVOTLDoc reads in a file path parses the document line
+// LoadFile reads in a file path parses the document line
 // by line into a VOTLDoc, if a read or parsing error occurs,
 // an error is returned with
-func NewVOTLDoc(sourceFile string) (VOTLDoc, error) {
-    var result VOTLDoc
+func LoadFile(sourceFile string) (VOTLDoc, error) {
 
-    file, err := os.Open(sourceFile)
-    if err != nil {
-        return result, fmt.Errorf("failed to open source file [%s]: %s", sourceFile, err.Error())
-    }
+	sourceString, err := ioutil.ReadFile(sourceFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open source file [%s]: %s", sourceFile, err.Error())
+	}
 
-    scanner := bufio.NewScanner(file)
-    scanner.Split(bufio.ScanLines)
+	return NewVOTLDoc(string(sourceString))
+}
 
-    for scanner.Scan() {
-        if !strings.HasPrefix(scanner.Text(), "\t") {
-            result = append(result, NewVOTLElement(scanner.Text()))
-            continue
-        }
+func NewVOTLDoc(source string) (VOTLDoc, error) {
+	var result VOTLDoc
 
-        if len(result) == 0 {
-            return result, fmt.Errorf("Malformed header [%s], too man leading tabs.", scanner.Text())
-        }
+	// Split doc string into separate lines
+	lines := strings.Split(strings.ReplaceAll(source, "\r\n", "\n"), "\n")
 
-        child := result[len(result) - 1]
-        if err := child.AddChild(strings.TrimPrefix(scanner.Text(), "\t")); err != nil {
-            return result, err
-        }
-        result[len(result) - 1] = child
-    }
+	for _, line := range lines {
+		// Filter out whitespace
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
 
-    return result, nil
+		if !strings.HasPrefix(line, "\t") {
+			result = append(result, NewVOTLElement(line))
+			continue
+		}
+
+		if len(result) == 0 {
+			return result, fmt.Errorf("Malformed header [%s], too man leading tabs.", line)
+		}
+
+		child := result[len(result)-1]
+		if err := child.AddChild(strings.TrimPrefix(line, "\t")); err != nil {
+			return result, err
+		}
+		result[len(result)-1] = child
+	}
+
+	return result, nil
 }
