@@ -10,9 +10,8 @@ import (
 // headers in a VOTL document.
 type VOTLDoc []VOTLElement
 
-// LoadFile reads in a file path parses the document line
-// by line into a VOTLDoc, if a read or parsing error occurs,
-// an error is returned with
+// LoadFile reads in a file path and returns a parsed VOTLDoc
+// if a read or parsing error occurs, we return the error
 func LoadFile(sourceFile string) (VOTLDoc, error) {
 
 	sourceString, err := ioutil.ReadFile(sourceFile)
@@ -23,6 +22,8 @@ func LoadFile(sourceFile string) (VOTLDoc, error) {
 	return NewVOTLDoc(string(sourceString))
 }
 
+// NewVOTLDoc reads in a source string and parses it into a new
+// VOTLDoc, if a parsing error occurs, the error is returned
 func NewVOTLDoc(source string) (VOTLDoc, error) {
 	var result VOTLDoc
 
