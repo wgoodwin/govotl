@@ -5,11 +5,22 @@ import (
 	"strings"
 )
 
+// Basic VotlNode interface
 type VotlNode interface {
 	AddChild(string) error
 	Children() []VotlNode
 	Type() VotlType
+	Level(int) // Intention is to implement internally to ensure writing the appropriate number of tabs
 	String() string
+	Text() string
+}
+
+func NewVotlNode(line string) VotlNode {
+	switch divineType(line) {
+	case VotlTypeHeader:
+		return NewVotlHeader(line)
+	}
+	return nil
 }
 
 type baseNode struct {
@@ -17,6 +28,10 @@ type baseNode struct {
 	vType    VotlType
 	level    int
 	children []VotlNode
+}
+
+func (bn *baseNode) Text() string {
+	return bn.text
 }
 
 func (bn *baseNode) AddChild(line string) error {
@@ -28,16 +43,19 @@ func (bn *baseNode) AddChild(line string) error {
 		if err != nil {
 			return err
 		}
+		return nil
 	}
-	switch divineType(line) {
-	case VotlTypeHeader:
-		// Append a header to the list
-	}
+	bn.AddChildNode(NewVotlNode(line))
 	return nil
 }
 
 func (bn *baseNode) AddChildNode(node VotlNode) {
+	node.Level(bn.level + 1)
 	bn.children = append(bn.children, node)
+}
+
+func (bn *baseNode) Level(level int) {
+	bn.level = level
 }
 
 func (bn *baseNode) Type() VotlType {
@@ -50,4 +68,8 @@ func (bn *baseNode) appendChildrenString() string {
 		line += "\n" + strings.Repeat("\t", bn.level+1) + n.String()
 	}
 	return line
+}
+
+func (bn *baseNode) Children() []VotlNode {
+	return bn.children
 }
